@@ -50,12 +50,6 @@ const productPhoto = (name) => {
 const products = {
   acai: [
     [
-      "Açaí Puro",
-      "Cremosidade e sabor, as marcas do nosso açaí.",
-      16.9,
-      "photo-1595981267035-7b04ca84a82d",
-    ],
-    [
       "Monte seu Copo",
       "Seu copo em 3 camadas + escolha seus adicionais.",
       23,
@@ -68,6 +62,12 @@ const products = {
       21.9,
       "photo-1590301157890-4810ed352733",
       true,
+    ],
+    [
+      "Açaí Puro",
+      "Cremosidade e sabor, as marcas do nosso açaí.",
+      16.9,
+      "photo-1595981267035-7b04ca84a82d",
     ],
     [
       "Açaí Zero",
