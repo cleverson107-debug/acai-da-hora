@@ -251,7 +251,7 @@ function render() {
   document.querySelector("#app").innerHTML = `
   <div class="site-promo">⚡ Oferta de boas-vindas: copo 500 ml por R$ 23,00</div><main class="wrap"><section id="destaques" class="hero store-hero"><img class="hero-logo" src="/assets/logo-acai-da-hora-v4.webp" width="320" height="320" fetchpriority="high" decoding="async" alt="Marca Açaí da Hora com palmeira, copo de açaí e paisagem tropical"/><div class="hero-copy"><h2>Açaí da Hora</h2><p class="hero-subtitle">O seu momento mais gostoso chegou.</p><div class="service-line"><span>🛵 Entrega rápida</span><b>30 min</b></div><p class="hero-location">Estamos a 1,6 km de você · Atendimento imediato</p><div class="hero-badges"><span>📍 Frete grátis para Rondonópolis</span><span>🛡️ Pedido 100% seguro</span></div><div class="open-badge"><i></i> ESTAMOS ABERTOS</div></div></section><nav class="categories"><div>${["Destaques", "Açaí", "Combos", "Trufados", "Salada de Frutas", "Barcas", "Milk Shake", "Sundae", "Bebidas"].map((x) => `<a href="#${x === "Destaques" ? "destaques" : x.toLowerCase().replaceAll(" ", "")}">${x}</a>`).join("")}</div></nav><section class="hero-offer featured-offer"><div><small>DESTAQUE DO DIA · 11% OFF</small><strong>Copo 500 ml + 5 adicionais grátis</strong></div><b>${money(23)}</b><button class="primary" id="heroBuild">Montar agora <span>→</span></button></section>
   ${sections.map(([key, title, sub]) => `<section id="${key === "frutas" ? "saladadefrutas" : key}" class="section"><div class="section-head"><div><h2>${title}</h2><p>${sub}</p></div>${products[key].length > 3 ? '<button class="see-more">Ver mais →</button>' : ""}</div><div class="product-grid">${products[key].slice(0, 4).map(productCard).join("")}</div></section>`).join("")}
-  </main><div id="cartBar"></div><div id="modalRoot"></div><div id="toast" role="status"></div>`;
+  </main><footer class="site-footer"><div class="footer-inner"><strong>Açaí da Hora</strong><p>Seu açaí favorito, preparado com carinho e entregue até você.</p><nav aria-label="Informações legais"><button data-legal="terms">Termos de Uso</button><span aria-hidden="true">|</span><button data-legal="privacy">Política de Privacidade</button></nav><small>© 2026 Açaí da Hora • Todos os direitos reservados</small></div></footer><div id="cartBar"></div><div id="modalRoot"></div><div id="toast" role="status"></div>`;
   bind();
   updateCart();
   setTimeout(locate, 8000);
@@ -266,6 +266,11 @@ function bind() {
     openProduct("Monte seu Copo + 3 Adicionais");
   const cartIcon = document.querySelector("#cartIcon");
   if (cartIcon) cartIcon.onclick = openCart;
+  document
+    .querySelectorAll("[data-legal]")
+    .forEach((button) =>
+      button.addEventListener("click", () => openLegal(button.dataset.legal)),
+    );
 }
 function findProduct(name) {
   return (
@@ -428,6 +433,23 @@ function openCart() {
         openCart();
       }),
   );
+}
+function openLegal(type) {
+  const terms = {
+    title: "Termos de Uso",
+    content: `<p>Ao utilizar o site Açaí da Hora, você concorda em fornecer informações corretas para a realização e entrega do pedido.</p><h3>Pedidos e pagamentos</h3><p>Os produtos, preços e disponibilidade podem ser atualizados sem aviso prévio. O pedido mínimo é de R$ 10,00. A confirmação do pedido ocorre após a aprovação do pagamento.</p><h3>Entrega</h3><p>O prazo informado é uma estimativa e pode variar por distância, trânsito, clima ou volume de pedidos. Confira o endereço antes de concluir a compra.</p><h3>Cancelamentos</h3><p>Solicitações devem ser feitas o mais rápido possível. Depois que o preparo for iniciado, o cancelamento poderá não estar disponível.</p><h3>Atendimento</h3><p>Em caso de dúvidas ou problemas com o pedido, entre em contato pelos canais de atendimento informados pela loja.</p>`,
+  };
+  const privacy = {
+    title: "Política de Privacidade",
+    content: `<p>O Açaí da Hora respeita sua privacidade e utiliza apenas os dados necessários para atender, processar e entregar seus pedidos.</p><h3>Dados utilizados</h3><p>Podemos utilizar nome, telefone, endereço de entrega, itens do pedido e localização aproximada obtida pelo endereço IP.</p><h3>Finalidade</h3><p>Essas informações são usadas para calcular a área de atendimento, processar o pedido, realizar a entrega, oferecer suporte e prevenir fraudes.</p><h3>Compartilhamento</h3><p>Os dados são compartilhados somente com serviços essenciais ao pedido, como pagamento e entrega, quando necessário. Não vendemos informações pessoais.</p><h3>Seus direitos</h3><p>Você pode solicitar informações, correção ou exclusão dos seus dados, respeitadas as obrigações legais de conservação.</p>`,
+  };
+  const documentData = type === "privacy" ? privacy : terms;
+  document.querySelector("#modalRoot").innerHTML = `<div class="overlay legal-overlay"><article class="modal legal-modal" role="dialog" aria-modal="true" aria-labelledby="legal-title"><button class="close" aria-label="Fechar">×</button><h2 id="legal-title">${documentData.title}</h2><div class="legal-content">${documentData.content}</div><button class="primary full legal-close">Entendi</button></article></div>`;
+  document.querySelector(".legal-modal .close").onclick = closeModal;
+  document.querySelector(".legal-close").onclick = closeModal;
+  document.querySelector(".legal-overlay").onclick = (event) => {
+    if (event.target === event.currentTarget) closeModal();
+  };
 }
 function toast(msg) {
   const t = document.querySelector("#toast");
