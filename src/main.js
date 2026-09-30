@@ -407,9 +407,19 @@ function updateCart() {
 }
 function openCart() {
   let sum = cart.reduce((a, x) => a + x.price, 0);
+  const minimumOrder = 10;
+  const belowMinimum = cart.length > 0 && sum < minimumOrder;
+  const missing = Math.max(0, minimumOrder - sum);
   document.querySelector("#modalRoot").innerHTML =
-    `<div class="overlay"><aside class="cart-panel"><button class="close">×</button><h2>Seu pedido</h2>${cart.length ? cart.map((x, i) => `<div class="cart-line"><div><b>${x.name}</b><small>${x.detail || ""}</small></div><strong>${money(x.price)}</strong><button data-remove="${i}">×</button></div>`).join("") : "<p>Seu carrinho está vazio.</p>"}<div class="cart-total"><span>Total</span><b>${money(sum)}</b></div><button class="primary full" ${!cart.length ? "disabled" : ""}>Finalizar pedido →</button></aside></div>`;
+    `<div class="overlay"><aside class="cart-panel"><button class="close">×</button><h2>Seu pedido</h2>${cart.length ? cart.map((x, i) => `<div class="cart-line"><div><b>${x.name}</b><small>${x.detail || ""}</small></div><strong>${money(x.price)}</strong><button data-remove="${i}">×</button></div>`).join("") : "<p>Seu carrinho está vazio.</p>"}<div class="cart-total"><span>Total</span><b>${money(sum)}</b></div>${belowMinimum ? `<div class="minimum-order" role="alert"><b>Pedido mínimo de ${money(minimumOrder)}</b><span>Adicione mais ${money(missing)} para continuar.</span></div>` : ""}<button class="primary full" id="checkout" ${!cart.length ? "disabled" : ""}>Finalizar pedido →</button></aside></div>`;
   document.querySelector(".close").onclick = closeModal;
+  const checkout = document.querySelector("#checkout");
+  if (checkout)
+    checkout.onclick = () => {
+      if (belowMinimum)
+        return toast(`O pedido mínimo é ${money(minimumOrder)}. Faltam ${money(missing)}.`);
+      toast("Pedido pronto para finalizar!");
+    };
   document.querySelectorAll("[data-remove]").forEach(
     (b) =>
       (b.onclick = () => {
