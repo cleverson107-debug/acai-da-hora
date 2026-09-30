@@ -3,6 +3,7 @@ build/
 release/
 dist/
 archive/
+tmp/
 .wrangler/
 lighthouse-*.json
 .env
