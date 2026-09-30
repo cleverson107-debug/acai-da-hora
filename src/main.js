@@ -192,19 +192,19 @@ const products = {
     [
       "Sundae Nutella 300ml",
       "Cremosidade em cada colherada.",
-      18.9,
+      12.89,
       "photo-1563805042-7684c019e1cb",
     ],
     [
       "Sundae Ovomaltine 300ml",
       "O clássico que todo mundo ama.",
-      12.9,
+      12.89,
       "photo-1563805042-7684c019e1cb",
     ],
     [
       "Sundae Negresco 300ml",
       "Crocante e cremoso.",
-      12.9,
+      12.89,
       "photo-1563805042-7684c019e1cb",
     ],
   ],
@@ -244,11 +244,12 @@ let cart = [],
   modalProduct = null,
   free = {},
   premium = {},
-  extrasOpen = false;
+  extrasOpen = false,
+  selectedSize = null;
 
 function productCard(p) {
   const [name, desc, price, photo, custom] = p;
-  return `<article class="product-card" data-product="${name}"><div class="product-img"><img loading="lazy" decoding="async" width="480" height="384" src="${productPhoto(name)}" alt="${name}"/><button class="plus" aria-label="Adicionar ${name}">+</button></div><div class="product-info"><span class="cashback">● 2% cashback</span><h3>${name}</h3><p>${desc}</p><div class="price-row"><strong>${money(price)}</strong><button class="add">${custom ? "Montar" : "Adicionar"}</button></div></div></article>`;
+  return `<article class="product-card" data-product="${name}"><div class="product-img"><img loading="lazy" decoding="async" width="480" height="384" src="${productPhoto(name)}" alt="${name}"/><button class="plus" aria-label="Adicionar ${name}">+</button></div><div class="product-info"><span class="cashback">● 2% cashback</span><h3>${name}</h3><p>${desc}</p><div class="price-row"><strong>${money(price)}</strong><button class="add">${isDirectAdd(name) ? "Adicionar" : custom ? "Montar" : "Escolher"}</button></div></div></article>`;
 }
 function render() {
   document.querySelector("#app").innerHTML = `
@@ -266,7 +267,7 @@ function bind() {
       el.addEventListener("click", () => openProduct(el.dataset.product)),
     );
   document.querySelector("#heroBuild").onclick = () =>
-    openProduct("Monte seu Copo + 3 Adicionais");
+    openProduct("Monte seu Copo");
   const cartIcon = document.querySelector("#cartIcon");
   if (cartIcon) cartIcon.onclick = openCart;
   document
@@ -288,12 +289,17 @@ function findProduct(name) {
     ]
   );
 }
+function isDirectAdd(name) {
+  return /Água mineral|Refrigerante|Barca|Fondue/i.test(name);
+}
 function openProduct(name) {
   modalProduct = findProduct(name);
   free = {};
   premium = {};
   extrasOpen = false;
-  if (modalProduct[4] || name.includes("Monte")) renderCustomizer();
+  selectedSize = null;
+  const directAdd = isDirectAdd(name);
+  if (!directAdd) renderCustomizer();
   else {
     cart.push({ name, price: modalProduct[2] });
     toast("Adicionado ao pedido");
@@ -303,22 +309,35 @@ function openProduct(name) {
 function totalFree() {
   return Object.values(free).reduce((a, b) => a + b, 0);
 }
-const premiumPrices = {
-  Uva: 2,
-  Abacaxi: 2,
-  Mel: 3,
-  "Creme de Avelã": 4,
-  Nutella: 4,
-  Ovomaltine: 3,
-  "Ferrero Rocher": 5,
-};
+function sizeOptions() {
+  const [name, , base] = modalProduct;
+  if (name === "Monte seu Copo")
+    return [[300, base - 5], [500, base], [700, base + 7]];
+  if (/Milk Shake|Sundae/i.test(name))
+    return [[300, base], [500, base + 5], [700, base + 9]];
+  if (/Salada|Tigela/i.test(name))
+    return [[300, base], [400, base + 3], [600, base + 7]];
+  return [[300, base], [500, base + 6], [700, base + 10]];
+}
+function extrasPrices() {
+  const name = modalProduct[0];
+  if (/Milk Shake/i.test(name))
+    return { Chantilly: 2, Ovomaltine: 3, Paçoca: 2, "Creme de Avelã": 4 };
+  if (/Sundae/i.test(name))
+    return { Chantilly: 2, Morango: 3, Ovomaltine: 3, "Creme de Avelã": 4 };
+  if (/Salada/i.test(name))
+    return { Mel: 2, Granola: 2, "Leite condensado": 3, "Iogurte grego": 4 };
+  return { Uva: 2, Abacaxi: 2, Mel: 3, "Creme de Avelã": 4, Nutella: 4, Ovomaltine: 3, "Ferrero Rocher": 5 };
+}
 function totalPremium() {
+  const prices = extrasPrices();
   return Object.entries(premium).reduce(
-    (a, [n, q]) => a + premiumPrices[n] * q,
+    (a, [n, q]) => a + prices[n] * q,
     0,
   );
 }
 function renderCustomizer(scrollTop = 0) {
+  const hasFreeExtras = Boolean(modalProduct[4]);
   const f = [
     "Morango",
     "Banana",
@@ -330,22 +349,26 @@ function renderCustomizer(scrollTop = 0) {
     "Paçoca",
     "Coco ralado",
   ];
-  const p = premiumPrices;
+  const p = extrasPrices();
+  const sizes = sizeOptions();
+  if (!selectedSize)
+    selectedSize = modalProduct[0] === "Monte seu Copo" ? sizes[1][0] : sizes[0][0];
+  const base = sizes.find(([size]) => size === selectedSize)[1];
   const qty = (name, paid = false) =>
     `<div class="option"><span>${name}${paid ? ` <small>+ ${money(p[name])}</small>` : ""}</span><div><button data-q="${name}" data-paid="${paid}" data-d="-">−</button><b>${(paid ? premium : free)[name] || 0}</b><button data-q="${name}" data-paid="${paid}" data-d="+">+</button></div></div>`;
-  const base = modalProduct[2];
+  const sizeButtons = sizes
+    .map(([size, price]) => `<button class="size-option ${size === selectedSize ? "selected" : ""}" data-size="${size}"><b>${size} ml</b><span>${money(price)}</span></button>`)
+    .join("");
+  const freeSection = hasFreeExtras
+    ? `<div class="gift"><b>🎁 5 adicionais grátis</b><span>${totalFree()} / 5 escolhidos ${totalFree() === 5 ? "✓" : ""}</span></div><button class="extras-toggle">🍓 <span><b>Escolha seus adicionais</b><small>Grátis · escolha até 5</small></span><i>${extrasOpen ? "⌃" : "⌄"}</i></button><div class="extras ${extrasOpen ? "expanded" : ""}"><h4>GRÁTIS</h4>${f.map((x) => qty(x)).join("")}<h4>⭐ EXTRAS PAGOS</h4>${Object.keys(p).map((x) => qty(x, true)).join("")}</div>`
+    : `<div class="paid-extras"><h4>✨ ADICIONAIS</h4><p>Personalize se quiser</p>${Object.keys(p).map((x) => qty(x, true)).join("")}</div>`;
   document.querySelector("#modalRoot").innerHTML =
-    `<div class="overlay"><div class="modal"><button class="close" aria-label="Fechar">×</button><div class="modal-title"><span>🍇</span><div><h2>${modalProduct[0]}</h2><p>Escolha seus adicionais favoritos.</p></div></div><div class="gift"><b>🎁 5 adicionais grátis</b><span>${totalFree()} / 5 escolhidos ${totalFree() === 5 ? "✓" : ""}</span></div><button class="extras-toggle">🍓 <span><b>Escolha seus adicionais</b><small>Grátis · escolha até 5</small></span><i>${extrasOpen ? "⌃" : "⌄"}</i></button><div class="extras ${extrasOpen ? "expanded" : ""}"><h4>GRÁTIS</h4>${f.map((x) => qty(x)).join("")}<h4>⭐ PREMIUM</h4>${Object.keys(
-      p,
-    )
-      .map((x) => qty(x, true))
-      .join(
-        "",
-      )}</div><div class="order"><div><small>SEU PEDIDO</small><b>${modalProduct[0]}</b><p>${
+    `<div class="overlay"><div class="modal"><button class="close" aria-label="Fechar">×</button><div class="modal-title"><span>🍇</span><div><h2>${modalProduct[0]}</h2><p>Escolha o tamanho e personalize.</p></div></div><div class="size-picker"><h4>ESCOLHA O TAMANHO</h4><div>${sizeButtons}</div></div>${freeSection}<div class="order"><div><small>SEU PEDIDO</small><b>${modalProduct[0]} · ${selectedSize} ml</b><p>${
       Object.entries(free)
         .filter((x) => x[1])
         .map(([n, q]) => `✓ ${q > 1 ? q + "x " : ""}${n}`)
-        .join(" · ") || "Escolha seus adicionais"
+        .concat(Object.entries(premium).filter((x) => x[1]).map(([n, q]) => `+ ${q > 1 ? q + "x " : ""}${n}`))
+        .join(" · ") || "Sem adicionais"
     }</p></div><strong>${money(base + totalPremium())}</strong></div><button class="primary full" id="confirm">Adicionar ao pedido <span>→</span></button></div></div>`;
   const modal = document.querySelector(".modal");
   modal.scrollTop = scrollTop;
@@ -353,13 +376,18 @@ function renderCustomizer(scrollTop = 0) {
   document.querySelector(".overlay").onclick = (e) => {
     if (e.target.className === "overlay") closeModal();
   };
-  document.querySelector(".extras-toggle").onclick = () => {
-    extrasOpen = !extrasOpen;
-    document.querySelector(".extras").classList.toggle("expanded", extrasOpen);
-    document.querySelector(".extras-toggle i").textContent = extrasOpen
-      ? "⌃"
-      : "⌄";
-  };
+  document.querySelectorAll("[data-size]").forEach((button) => {
+    button.onclick = () => {
+      selectedSize = Number(button.dataset.size);
+      renderCustomizer(modal.scrollTop);
+    };
+  });
+  const extrasToggle = document.querySelector(".extras-toggle");
+  if (extrasToggle) extrasToggle.onclick = () => {
+      extrasOpen = !extrasOpen;
+      document.querySelector(".extras").classList.toggle("expanded", extrasOpen);
+      extrasToggle.querySelector("i").textContent = extrasOpen ? "⌃" : "⌄";
+    };
   document.querySelectorAll("[data-q]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -371,15 +399,16 @@ function renderCustomizer(scrollTop = 0) {
         bag[n] = Math.max(0, (bag[n] || 0) + (b.dataset.d === "+" ? 1 : -1));
         b.parentElement.querySelector("b").textContent = bag[n];
         const chosen = totalFree();
-        document.querySelector(".gift span").textContent =
-          `${chosen} / 5 escolhidos ${chosen === 5 ? "✓" : ""}`;
+        const giftStatus = document.querySelector(".gift span");
+        if (giftStatus) giftStatus.textContent = `${chosen} / 5 escolhidos ${chosen === 5 ? "✓" : ""}`;
         document.querySelector(".order p").textContent =
           Object.entries(free)
             .filter((entry) => entry[1])
             .map(([name, quantity]) =>
               `✓ ${quantity > 1 ? quantity + "x " : ""}${name}`,
             )
-            .join(" · ") || "Escolha seus adicionais";
+            .concat(Object.entries(premium).filter((entry) => entry[1]).map(([name, quantity]) => `+ ${quantity > 1 ? quantity + "x " : ""}${name}`))
+            .join(" · ") || "Sem adicionais";
         document.querySelector(".order > strong").textContent = money(
           base + totalPremium(),
         );
@@ -389,14 +418,16 @@ function renderCustomizer(scrollTop = 0) {
     cart.push({
       name: modalProduct[0],
       price: base + totalPremium(),
-      detail: Object.entries(free)
+      detail: `${selectedSize} ml${Object.entries(free)
         .filter((x) => x[1])
         .map(([n, q]) => `${q}x ${n}`)
-        .join(", "),
+        .concat(Object.entries(premium).filter((x) => x[1]).map(([n, q]) => `${q}x ${n}`))
+        .map((item) => `, ${item}`)
+        .join("")}`,
     });
     closeModal();
     updateCart();
-    toast("Açaí adicionado ao pedido!");
+    toast("Produto adicionado ao pedido!");
   };
 }
 function closeModal() {
