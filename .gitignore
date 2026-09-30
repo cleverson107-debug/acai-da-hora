@@ -1,0 +1,10 @@
+node_modules/
+build/
+release/
+dist/
+archive/
+.wrangler/
+lighthouse-*.json
+.env
+.env.*
+!.env.example
